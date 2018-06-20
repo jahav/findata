@@ -55,9 +55,11 @@ namespace JusticeRA
             var dayCount = CountActionsSince(dayAgo);
             if (dayCount >= limitPerDay)
             {
-                var allowedLimitTime = actions[actions.Count - limitPerMinute];
-                var waitTime = now - allowedLimitTime;
-                await Task.Delay(waitTime);
+                var allowedLimitTime = actions[actions.Count - limitPerDay];
+                var elapsedTime = now - allowedLimitTime;
+                var waitTime = (TimeSpan.FromDays(1) - elapsedTime);
+                await delay(waitTime);
+                now += waitTime;
             }
             var minuteAgo = now.AddMinutes(-1);
             var minuteCount = CountActionsSince(minuteAgo);
@@ -67,6 +69,7 @@ namespace JusticeRA
                 var elapsedTime = now - allowedLimitTime;
                 var waitTime = (TimeSpan.FromMinutes(1) - elapsedTime);
                 await delay(waitTime);
+                now += waitTime;
             }
             actions.Add(now);
             CleanUpActions(now);
