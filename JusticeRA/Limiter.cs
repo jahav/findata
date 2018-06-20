@@ -50,30 +50,25 @@ namespace JusticeRA
 
         public async Task<T> DoAsync<T>(Func<Task<T>> function)
         {
+            await Wait(TimeProvider.UtcNow, limitPerDay, TimeSpan.FromDays(1));
+            await Wait(TimeProvider.UtcNow, limitPerMinute, TimeSpan.FromMinutes(1));
             var now = TimeProvider.UtcNow;
-            var dayAgo = now.AddDays(-1);
-            var dayCount = CountActionsSince(dayAgo);
-            if (dayCount >= limitPerDay)
-            {
-                var allowedLimitTime = actions[actions.Count - limitPerDay];
-                var elapsedTime = now - allowedLimitTime;
-                var waitTime = (TimeSpan.FromDays(1) - elapsedTime);
-                await delay(waitTime);
-                now += waitTime;
-            }
-            var minuteAgo = now.AddMinutes(-1);
-            var minuteCount = CountActionsSince(minuteAgo);
-            if (minuteCount >= limitPerMinute)
-            {
-                var allowedLimitTime = actions[actions.Count - limitPerMinute];
-                var elapsedTime = now - allowedLimitTime;
-                var waitTime = (TimeSpan.FromMinutes(1) - elapsedTime);
-                await delay(waitTime);
-                now += waitTime;
-            }
             actions.Add(now);
             CleanUpActions(now);
             return await function();
+        }
+
+        private async Task Wait(DateTime now, int limitCount, TimeSpan interval)
+        {
+            var intervalAgo = now - interval;
+            var actionIntervalCount = CountActionsSince(intervalAgo);
+            if (actionIntervalCount >= limitCount)
+            {
+                var allowedLimitTime = actions[actions.Count - limitCount];
+                var elapsedTime = now - allowedLimitTime;
+                var waitTime = (interval - elapsedTime);
+                await delay(waitTime);
+            }
         }
 
         private int CountActionsSince(DateTime reference)
