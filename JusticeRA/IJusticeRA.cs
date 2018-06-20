@@ -36,9 +36,9 @@ namespace JusticeRA
         public string Number { get; set; }
 
         /// <summary>
-        /// Summary of the document.
+        /// Summary of what the document contains.
         /// </summary>
-        public string Summary { get; set; }
+        public string[] Content { get; set; }
 
         /// <summary>
         /// The date when the document was created.
@@ -53,7 +53,7 @@ namespace JusticeRA
         /// <summary>
         /// The date when the document was filed in the <span>sbírka listin</span>.
         /// </summary>
-        public DateTime? FileDate { get; set; }
+        public DateTime? FillingDate { get; set; }
 
         /// <summary>
         /// Number of pages of the document.
@@ -63,7 +63,7 @@ namespace JusticeRA
         /// <summary>
         /// Is the document in the digital form.
         /// </summary>
-        public bool IsDigital { get; set; }
+// XXX:        public bool IsDigital { get; set; }
 
         /// <summary>
         /// The URI to download the document.
