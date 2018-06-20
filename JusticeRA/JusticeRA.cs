@@ -7,17 +7,61 @@ using System.Net;
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace JusticeRA
 {
     public class JusticeRA : IJusticeRA
     {
-        private static string documentDetailUrl = @"https://or.justice.cz/ias/content/download?id={0}";
         private static string baseUrl = @"https://or.justice.cz";
         private static string prefixUrl = @"https://or.justice.cz/ias/ui/";
         private static string documentListingUrl = @"https://or.justice.cz/ias/ui/vypis-sl-firma?subjektId={0}";
+        private static Regex subjectIdPattern = new Regex("subjektId=([0-9]*)");
         private static CultureInfo czechCulture = CultureInfo.GetCultureInfo("cs-CZ");
+
+        /// <summary>
+        /// Search a subject at https://or.justice.cz.
+        /// </summary>
+        /// <param name="criteria">Criteria of the search.</param>
+        /// <returns>Array of found results.</returns>
+        [OperationContract]
+        public async Task<SubjectSummary[]> SearchSubjects(SearchCriteria criteria)
+        {
+            if (criteria == null)
+            {
+                throw new ArgumentNullException(nameof(criteria));
+            }
+
+            var sb = new StringBuilder();
+            sb.Append("https://or.justice.cz/ias/ui/rejstrik-$firma?p%3A%3Asubmit=x&.%2Frejstrik-%24firma=");
+            if (!string.IsNullOrWhiteSpace(criteria.Name))
+            {
+                sb.AppendFormat("&nazev={0}", Uri.EscapeDataString(criteria.Name));
+            }
+            if (!string.IsNullOrWhiteSpace(criteria.FictIdNumber))
+            {
+                sb.AppendFormat("&ico={0}", Uri.EscapeDataString(criteria.FictIdNumber));
+            }
+            sb.Append("&obec=&ulice=&forma=&oddil=&vlozka=&soud=&polozek=50&typHledani=STARTS_WITH&jenPlatne=VSECHNY");
+
+            var web = new HtmlWeb();
+            var htmlDocument = await web.LoadFromWebAsync(sb.ToString());
+            var searchResults  = htmlDocument.DocumentNode.SelectNodes("//table[@class='result-details']/..");
+            if (searchResults == null)
+            {
+                return new SubjectSummary[0];
+            }
+
+            return searchResults
+                .Select(x => new SubjectSummary
+                {
+                    FictIdNumber = Regex.Replace(x.SelectSingleNode(".//tbody/tr[1]/td[2]").InnerText, @"\s+", string.Empty),
+                    Name = HtmlEntity.DeEntitize(x.SelectSingleNode(".//tbody/tr[1]/td[1]").InnerText.Trim()),
+                    SubjectId = GetSubjectId(x, ".//li[1]/a")
+                }).ToArray();
+        }
+
 
         /// <inheritdoc />
         public async Task<DocumentMetadata[]> GetDocumentListAsync(int subjectId)
@@ -113,6 +157,23 @@ namespace JusticeRA
             }
             var path = HtmlEntity.DeEntitize(hrefNode.Attributes["href"]?.Value ?? string.Empty).Trim();
             return new Uri(baseUrl + path);
+        }
+
+        private int GetSubjectId(HtmlNode node, string xpath)
+        {
+            var hrefNode = node.SelectSingleNode(xpath);
+            if (hrefNode == null)
+            {
+                throw new FormatException($"Unable to find href node {xpath}.");
+            }
+            var path = HtmlEntity.DeEntitize(hrefNode.Attributes["href"]?.Value ?? string.Empty).Trim();
+            var match = subjectIdPattern.Match(path);
+            if (!match.Success)
+            {
+                throw new FormatException($"Unable to match subjektId in {path}.");
+            }
+            var subjectIdString = match.Groups[1].Value;
+            return int.Parse(subjectIdString);
         }
     }
 }

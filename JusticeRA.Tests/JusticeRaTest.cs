@@ -17,5 +17,14 @@ namespace JusticeRA.Tests
             var justiceRa = new JusticeRA();
             var list = await justiceRa.GetDocumentListAsync(profinitSubjectId);
         }
+
+        [Fact]
+        public async Task SearchWorks()
+        {
+            var justiceRa = new JusticeRA();
+            var list = await justiceRa.SearchSubjects(new SearchCriteria {
+                Name = "Pro"
+            });
+        }
     }
 }
