@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+*.suo
+*.user
+.vs
+/Infrastructure/bin
+/Infrastructure/obj
+/JusticeRA.Tests/bin
+/JusticeRA.Tests/obj
+/JusticeRA/bin
+/JusticeRA/obj
+/packages
